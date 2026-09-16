@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,15 @@ using TroubleshootRequestSystem.Api.Models;
 using TroubleshootRequestSystem.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Render (and most container platforms) assign the listen port via $PORT
+// rather than appsettings/launchSettings. Only kick in when it's set, so
+// local `dotnet run` keeps using its usual launch profile.
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(renderPort))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+}
 
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -52,6 +62,15 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+// Render terminates TLS at its edge and forwards plain HTTP with X-Forwarded-*
+// headers; proxy IPs aren't a fixed range, hence clearing Known*.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? ["http://localhost:3000"];
@@ -119,7 +138,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+app.UseForwardedHeaders();
 
 app.UseCors("Frontend");
 
@@ -127,6 +146,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())

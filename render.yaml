@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: troubleshoot-request-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+
+    envVars:
+      # Committed defaults — safe to keep in this file.
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Jwt__Issuer
+        value: TroubleshootRequestSystem
+      - key: Jwt__Audience
+        value: TroubleshootRequestSystem.Client
+
+      # Secrets — set actual values in the Render dashboard's Environment
+      # tab, not here. sync: false keeps them out of this committed file.
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__Key
+        sync: false
+
+      - key: Cors__AllowedOrigins__0
+        sync: false
+
+      - key: InitialStaff__Name
+        sync: false
+      - key: InitialStaff__Email
+        sync: false
+      - key: InitialStaff__Password
+        sync: false
