@@ -1,0 +1,17 @@
+# .NET build artifacts
+backend/**/bin/
+backend/**/obj/
+
+# .NET user secrets are stored outside the repo (%APPDATA%\Microsoft\UserSecrets),
+# never here, but ignore just in case anything gets copied in locally.
+**/secrets.json
+
+# Editor / IDE
+.vs/
+.vscode/
+*.user
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store

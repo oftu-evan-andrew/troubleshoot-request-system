@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TroubleshootRequestSystem.Api/TroubleshootRequestSystem.Api.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces */
+  --color-canvas: #f4f6fb;
+  --color-surface: #ffffff;
+
+  /* Text */
+  --color-ink: #0f172a;
+  --color-ink-muted: #56617a;
+  --color-ink-faint: #8891a6;
+
+  /* Borders */
+  --color-hairline: #e2e6ee;
+  --color-hairline-strong: #c7cfdd;
+
+  /* Brand blue */
+  --color-primary: #1d4ed8;
+  --color-primary-hover: #1a41b3;
+  --color-primary-tint: #eaf0fe;
+
+  /* Semantic status/priority tints (kept muted so blue stays the one loud color) */
+  --color-amber-ink: #92400e;
+  --color-amber-tint: #fdf3e3;
+  --color-green-ink: #166534;
+  --color-green-tint: #e7f6ec;
+  --color-slate-ink: #4b5568;
+  --color-slate-tint: #eceff3;
+  --color-red-ink: #b91c1c;
+  --color-red-tint: #fdecec;
+}
+
+@theme inline {
+  /* These reference next/font's runtime-injected variable names, so they
+     have to stay a live var() reference rather than a static value. */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
+}
+
+/* Tailwind's preflight doesn't set this (native buttons default to the
+   arrow cursor in most browsers), so clickable controls need it explicitly. */
+button:not(:disabled),
+select,
+[role="button"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Consistent, visible keyboard focus across custom controls. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
