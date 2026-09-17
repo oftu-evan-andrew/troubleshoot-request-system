@@ -119,7 +119,6 @@ function QuickAddForms({ onError }: { onError: (msg: string | null) => void }) {
             required
             value={labName}
             onChange={(e) => setLabName(e.target.value)}
-            placeholder="Lab A"
             className={fieldClass}
           />
         </label>
@@ -129,7 +128,6 @@ function QuickAddForms({ onError }: { onError: (msg: string | null) => void }) {
             required
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder="Building 1, Floor 2"
             className={fieldClass}
           />
         </label>
@@ -162,7 +160,6 @@ function QuickAddForms({ onError }: { onError: (msg: string | null) => void }) {
             required
             value={seatNumber}
             onChange={(e) => setSeatNumber(e.target.value)}
-            placeholder="PC-01"
             className={fieldClass}
           />
         </label>
@@ -179,7 +176,6 @@ function QuickAddForms({ onError }: { onError: (msg: string | null) => void }) {
             required
             value={assetTag}
             onChange={(e) => setAssetTag(e.target.value)}
-            placeholder="LABA-PC-0007"
             className={fieldClass}
           />
         </label>
