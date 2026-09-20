@@ -17,7 +17,9 @@ export default function StaffLoginPage() {
   const [login, { isLoading }] = useLoginMutation();
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const alreadyLoggedIn = useAppSelector((state) => Boolean(state.auth.token));
+  const alreadyLoggedIn = useAppSelector(
+    (state) => state.auth.hydrated && Boolean(state.auth.token),
+  );
 
   useEffect(() => {
     if (alreadyLoggedIn) {

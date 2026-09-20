@@ -11,15 +11,16 @@ import { NewRequestWatcher } from "@/components/NewRequestWatcher";
 // system's actual security boundary.
 export function RequireStaffAuth({ children }: { children: React.ReactNode }) {
   const token = useAppSelector((state) => state.auth.token);
+  const hydrated = useAppSelector((state) => state.auth.hydrated);
   const router = useRouter();
 
   useEffect(() => {
-    if (!token) {
+    if (hydrated && !token) {
       router.replace("/staff/login");
     }
-  }, [token, router]);
+  }, [hydrated, token, router]);
 
-  if (!token) {
+  if (!hydrated || !token) {
     return null;
   }
 

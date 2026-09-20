@@ -7,15 +7,12 @@ const STAFF_STORAGE_KEY = "trs_staff";
 interface AuthState {
   token: string | null;
   staff: StaffSummary | null;
+  // False until saved credentials have been read from localStorage on the
+  // client, so the first client render matches the server-rendered HTML.
+  hydrated: boolean;
 }
 
-// Reads whatever was persisted from a previous session so a page refresh
-// doesn't bounce a logged-in staff member back to the login screen.
-function loadInitialState(): AuthState {
-  if (typeof window === "undefined") {
-    return { token: null, staff: null };
-  }
-
+export function readStoredAuth(): Pick<AuthState, "token" | "staff"> {
   const token = window.localStorage.getItem(TOKEN_STORAGE_KEY);
   const staffRaw = window.localStorage.getItem(STAFF_STORAGE_KEY);
 
@@ -29,10 +26,17 @@ function loadInitialState(): AuthState {
   }
 }
 
+const initialState: AuthState = { token: null, staff: null, hydrated: false };
+
 const authSlice = createSlice({
   name: "auth",
-  initialState: loadInitialState(),
+  initialState,
   reducers: {
+    authHydrated: (state, action: PayloadAction<Pick<AuthState, "token" | "staff">>) => {
+      state.token = action.payload.token;
+      state.staff = action.payload.staff;
+      state.hydrated = true;
+    },
     credentialsReceived: (state, action: PayloadAction<LoginResponse>) => {
       state.token = action.payload.token;
       state.staff = action.payload.staff;
@@ -50,5 +54,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { credentialsReceived, loggedOut } = authSlice.actions;
+export const { authHydrated, credentialsReceived, loggedOut } = authSlice.actions;
 export default authSlice.reducer;
