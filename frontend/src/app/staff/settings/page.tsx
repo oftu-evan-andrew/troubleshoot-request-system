@@ -11,6 +11,20 @@ import { useListStaffQuery, useRegisterStaffMutation } from "@/lib/api/authApi";
 function extractErrorMessage(error: unknown): string {
   if (error && typeof error === "object" && "data" in error) {
     const data = (error as { data?: unknown }).data;
+
+    // Registration failures (weak password, duplicate email) come back as a
+    // list of { code, description } entries from ASP.NET Identity.
+    if (Array.isArray(data)) {
+      const descriptions = data
+        .map((entry) =>
+          entry && typeof entry === "object" && "description" in entry
+            ? (entry as { description?: unknown }).description
+            : null,
+        )
+        .filter((d): d is string => typeof d === "string");
+      if (descriptions.length) return descriptions.join(" ");
+    }
+
     if (data && typeof data === "object" && "message" in data) {
       const message = (data as { message?: unknown }).message;
       if (typeof message === "string") return message;
@@ -126,6 +140,10 @@ function SettingsContent() {
               onChange={(e) => setPassword(e.target.value)}
               className={fieldClass}
             />
+            <span className="text-xs font-normal text-ink-muted">
+              At least 6 characters, with an uppercase letter, a lowercase letter, a number, and
+              a symbol.
+            </span>
           </label>
 
           {error && <p className="text-sm text-red-ink">{error}</p>}
