@@ -5,7 +5,9 @@ import { RequireStaffAuth } from "@/components/RequireStaffAuth";
 import { StaffNav } from "@/components/StaffNav";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
 import { fieldClass, labelClass } from "@/lib/ui";
+import { usePagination } from "@/lib/usePagination";
 import { useListStaffQuery, useRegisterStaffMutation } from "@/lib/api/authApi";
 
 function extractErrorMessage(error: unknown): string {
@@ -45,6 +47,7 @@ export default function StaffSettingsPage() {
 function SettingsContent() {
   const { data: staff, isLoading } = useListStaffQuery();
   const [registerStaff, { isLoading: registering }] = useRegisterStaffMutation();
+  const pager = usePagination(staff);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -92,7 +95,7 @@ function SettingsContent() {
                 </tr>
               </thead>
               <tbody>
-                {staff.map((s) => (
+                {pager.pageItems.map((s) => (
                   <tr key={s.id} className="border-t border-hairline">
                     <td className="px-4 py-2.5 text-ink">{s.name}</td>
                     <td className="px-4 py-2.5 text-ink-muted">{s.email}</td>
@@ -100,6 +103,7 @@ function SettingsContent() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...pager} onPageChange={pager.setPage} />
           </Card>
         )}
       </section>

@@ -6,6 +6,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import {
   useCancelRequestMutation,
   useEscalateRequestMutation,
@@ -73,6 +75,8 @@ function RequestTable({
   isLoading: boolean;
   emptyLabel: string;
 }) {
+  const pager = usePagination(requests);
+
   if (isLoading) {
     return <p className="text-sm text-ink-muted">Loading...</p>;
   }
@@ -97,7 +101,7 @@ function RequestTable({
           </tr>
         </thead>
         <tbody>
-          {requests.map((r) => (
+          {pager.pageItems.map((r) => (
             <tr key={r.id} className="border-t border-hairline">
               <td className="px-4 py-2.5 font-mono text-ink-muted">
                 REQ-{String(r.id).padStart(4, "0")}
@@ -119,6 +123,7 @@ function RequestTable({
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} onPageChange={pager.setPage} />
     </Card>
   );
 }
@@ -133,6 +138,7 @@ function InProgressTable({
   const [resolveRequest] = useResolveRequestMutation();
   const [escalateRequest] = useEscalateRequestMutation();
   const [cancelRequest] = useCancelRequestMutation();
+  const pager = usePagination(requests);
 
   if (isLoading) {
     return <p className="text-sm text-ink-muted">Loading...</p>;
@@ -159,7 +165,7 @@ function InProgressTable({
           </tr>
         </thead>
         <tbody>
-          {requests.map((r) => (
+          {pager.pageItems.map((r) => (
             <tr key={r.id} className="border-t border-hairline">
               <td className="px-4 py-2.5 font-mono text-ink-muted">
                 REQ-{String(r.id).padStart(4, "0")}
@@ -190,6 +196,7 @@ function InProgressTable({
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} onPageChange={pager.setPage} />
     </Card>
   );
 }

@@ -6,6 +6,8 @@ import { StaffNav } from "@/components/StaffNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { useListRequestsQuery } from "@/lib/api/requestsApi";
 import { RequestStatus } from "@/lib/types";
 
@@ -33,6 +35,7 @@ function HistoryContent() {
   const { data: requests, isLoading } = useListRequestsQuery(
     filter === "All" ? undefined : { status: filter },
   );
+  const pager = usePagination(requests);
 
   const seatFrequency = useMemo(() => {
     if (!requests) return [];
@@ -61,7 +64,10 @@ function HistoryContent() {
           <h2 className="text-lg font-semibold text-ink">Request history</h2>
           <select
             value={filter}
-            onChange={(e) => setFilter(e.target.value as RequestStatus | "All")}
+            onChange={(e) => {
+              setFilter(e.target.value as RequestStatus | "All");
+              pager.setPage(1);
+            }}
             className="rounded-md border border-hairline-strong bg-surface px-3 py-1.5 text-sm text-ink focus:border-primary"
           >
             {STATUS_FILTERS.map((f) => (
@@ -94,7 +100,7 @@ function HistoryContent() {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((r) => (
+                {pager.pageItems.map((r) => (
                   <tr key={r.id} className="border-t border-hairline">
                     <td className="px-4 py-2.5 font-mono text-ink-muted">
                       REQ-{String(r.id).padStart(4, "0")}
@@ -122,6 +128,7 @@ function HistoryContent() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...pager} onPageChange={pager.setPage} />
           </Card>
         )}
       </section>

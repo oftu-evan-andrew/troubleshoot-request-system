@@ -5,7 +5,9 @@ import { RequireStaffAuth } from "@/components/RequireStaffAuth";
 import { StaffNav } from "@/components/StaffNav";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
 import { fieldClass, labelClass } from "@/lib/ui";
+import { usePagination } from "@/lib/usePagination";
 import {
   useAssignUnitMutation,
   useCreateLabMutation,
@@ -18,7 +20,7 @@ import {
   useListUnitsQuery,
   useUpdateUnitStatusMutation,
 } from "@/lib/api/labsApi";
-import { ComputerUnitStatus } from "@/lib/types";
+import { ComputerUnitStatus, LabDto } from "@/lib/types";
 
 const UNIT_STATUSES: ComputerUnitStatus[] = ["Operational", "UnderMaintenance", "OutOfService"];
 
@@ -194,6 +196,7 @@ function SeatsSection({ onError }: { onError: (msg: string | null) => void }) {
   const { data: labs, isLoading } = useListLabsQuery();
   const [deleteLab] = useDeleteLabMutation();
   const [deleteSeat] = useDeleteSeatMutation();
+  const labsPager = usePagination(labs);
 
   async function handleDeleteLab(id: number, name: string) {
     if (!window.confirm(`Delete lab "${name}"? This also removes its seats.`)) return;
@@ -226,60 +229,84 @@ function SeatsSection({ onError }: { onError: (msg: string | null) => void }) {
       )}
 
       <div className="flex flex-col gap-6">
-        {labs?.map((lab) => (
-          <Card key={lab.id} className="p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-ink">
-                {lab.labName}{" "}
-                <span className="font-normal text-ink-muted">&middot; {lab.location}</span>
-              </h3>
-              <Button
-                size="sm"
-                variant="dangerOutline"
-                onClick={() => handleDeleteLab(lab.id, lab.labName)}
-              >
-                Delete lab
-              </Button>
-            </div>
-            {!lab.seats.length && <p className="text-sm text-ink-muted">No seats yet.</p>}
-            {!!lab.seats.length && (
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr>
-                    <th className="py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                      Seat
-                    </th>
-                    <th className="py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                      Current unit
-                    </th>
-                    <th className="py-1.5"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lab.seats.map((seat) => (
-                    <tr key={seat.id} className="border-t border-hairline">
-                      <td className="py-2 font-mono text-ink">{seat.seatNumber}</td>
-                      <td className="py-2 font-mono text-ink-muted">
-                        {seat.currentUnit ? seat.currentUnit.assetTag : "Unassigned"}
-                      </td>
-                      <td className="py-2 text-right">
-                        <Button
-                          size="sm"
-                          variant="dangerOutline"
-                          onClick={() => handleDeleteSeat(seat.id, seat.seatNumber)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Card>
+        {labsPager.pageItems.map((lab) => (
+          <LabCard
+            key={lab.id}
+            lab={lab}
+            onDeleteLab={handleDeleteLab}
+            onDeleteSeat={handleDeleteSeat}
+          />
         ))}
       </div>
+      <div className="mt-2">
+        <Pagination {...labsPager} onPageChange={labsPager.setPage} />
+      </div>
     </section>
+  );
+}
+
+function LabCard({
+  lab,
+  onDeleteLab,
+  onDeleteSeat,
+}: {
+  lab: LabDto;
+  onDeleteLab: (id: number, name: string) => void;
+  onDeleteSeat: (id: number, seatNumber: string) => void;
+}) {
+  const seatPager = usePagination(lab.seats);
+
+  return (
+    <Card className="p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-ink">
+          {lab.labName} <span className="font-normal text-ink-muted">&middot; {lab.location}</span>
+        </h3>
+        <Button size="sm" variant="dangerOutline" onClick={() => onDeleteLab(lab.id, lab.labName)}>
+          Delete lab
+        </Button>
+      </div>
+      {!lab.seats.length && <p className="text-sm text-ink-muted">No seats yet.</p>}
+      {!!lab.seats.length && (
+        <>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr>
+                <th className="py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  Seat
+                </th>
+                <th className="py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  Current unit
+                </th>
+                <th className="py-1.5"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {seatPager.pageItems.map((seat) => (
+                <tr key={seat.id} className="border-t border-hairline">
+                  <td className="py-2 font-mono text-ink">{seat.seatNumber}</td>
+                  <td className="py-2 font-mono text-ink-muted">
+                    {seat.currentUnit ? seat.currentUnit.assetTag : "Unassigned"}
+                  </td>
+                  <td className="py-2 text-right">
+                    <Button
+                      size="sm"
+                      variant="dangerOutline"
+                      onClick={() => onDeleteSeat(seat.id, seat.seatNumber)}
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="-mx-4 -mb-4 mt-2">
+            <Pagination {...seatPager} onPageChange={seatPager.setPage} />
+          </div>
+        </>
+      )}
+    </Card>
   );
 }
 
@@ -289,6 +316,7 @@ function UnitsSection({ onError }: { onError: (msg: string | null) => void }) {
   const [updateUnitStatus] = useUpdateUnitStatusMutation();
   const [assignUnit] = useAssignUnitMutation();
   const [deleteUnit] = useDeleteUnitMutation();
+  const unitsPager = usePagination(units);
 
   const seatOptions = useMemo(
     () =>
@@ -349,7 +377,7 @@ function UnitsSection({ onError }: { onError: (msg: string | null) => void }) {
               </tr>
             </thead>
             <tbody>
-              {units.map((unit) => (
+              {unitsPager.pageItems.map((unit) => (
                 <tr key={unit.id} className="border-t border-hairline">
                   <td className="px-4 py-2.5 font-mono text-ink">{unit.assetTag}</td>
                   <td className="px-4 py-2.5">
@@ -406,6 +434,7 @@ function UnitsSection({ onError }: { onError: (msg: string | null) => void }) {
               ))}
             </tbody>
           </table>
+          <Pagination {...unitsPager} onPageChange={unitsPager.setPage} />
         </Card>
       )}
     </section>
