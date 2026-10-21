@@ -156,6 +156,13 @@ using (var scope = app.Services.CreateScope())
 
     await SeedInitialStaffAsync(scope.ServiceProvider, app.Configuration, app.Logger);
 
+    // Opt-in demo data, e.g. `dotnet run -- --SeedSampleData=true`. Must run
+    // before the queue service loads its seat/unit caches below.
+    if (app.Configuration.GetValue<bool>("SeedSampleData"))
+    {
+        await SampleDataSeeder.SeedAsync(db, app.Logger);
+    }
+
     var queueService = scope.ServiceProvider.GetRequiredService<RequestQueueService>();
     await queueService.InitializeAsync();
 }
