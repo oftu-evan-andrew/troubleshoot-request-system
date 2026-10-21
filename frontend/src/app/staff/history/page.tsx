@@ -5,11 +5,15 @@ import { RequireStaffAuth } from "@/components/RequireStaffAuth";
 import { StaffNav } from "@/components/StaffNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
+import { IssueCell } from "@/components/IssueCell";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { usePagination } from "@/lib/usePagination";
 import { useListRequestsQuery } from "@/lib/api/requestsApi";
 import { RequestStatus } from "@/lib/types";
+import { formatRef } from "@/lib/format";
+import { fieldClass, scrollListClass, stickyHeadClass } from "@/lib/ui";
 
 const STATUS_FILTERS: { value: RequestStatus | "All"; label: string }[] = [
   { value: "All", label: "All" },
@@ -32,10 +36,30 @@ export default function StaffHistoryPage() {
 
 function HistoryContent() {
   const [filter, setFilter] = useState<RequestStatus | "All">("All");
+  const [search, setSearch] = useState("");
   const { data: requests, isLoading } = useListRequestsQuery(
     filter === "All" ? undefined : { status: filter },
   );
-  const pager = usePagination(requests);
+
+  // Matches against everything staff are likely to remember about a request:
+  // its reference, where it was, who reported it, or what they wrote.
+  const matching = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!requests || !term) return requests;
+    return requests.filter((r) =>
+      [
+        formatRef(r.id),
+        String(r.id),
+        `${r.labName} ${r.seatNumber}`,
+        r.reporterName,
+        r.reporterId,
+        r.unitAssetTag ?? "",
+        r.issueDescription,
+        r.resolvedByName ?? "",
+      ].some((field) => field.toLowerCase().includes(term)),
+    );
+  }, [requests, search]);
+  const pager = usePagination(matching);
 
   const seatFrequency = useMemo(() => {
     if (!requests) return [];
@@ -58,76 +82,77 @@ function HistoryContent() {
   }, [requests]);
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-8">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-6 py-8">
       <section>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-ink">Request history</h2>
-          <select
+          <SegmentedControl
+            name="status-filter"
             value={filter}
-            onChange={(e) => {
-              setFilter(e.target.value as RequestStatus | "All");
+            options={STATUS_FILTERS}
+            onChange={(value) => {
+              setFilter(value);
               pager.setPage(1);
             }}
-            className="rounded-md border border-hairline-strong bg-surface px-3 py-1.5 text-sm text-ink focus:border-primary"
-          >
-            {STATUS_FILTERS.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
+          />
         </div>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            pager.setPage(1);
+          }}
+          placeholder="Search by reference, seat, reporter, unit, or issue..."
+          aria-label="Search requests"
+          className={`mb-3 w-full ${fieldClass}`}
+        />
 
         {isLoading && <p className="text-sm text-ink-muted">Loading...</p>}
-        {!isLoading && !requests?.length && (
+        {!isLoading && !matching?.length && (
           <Card className="px-4 py-6 text-center text-sm text-ink-muted">
-            No requests found.
+            {search.trim() ? `No requests match "${search.trim()}".` : "No requests found."}
           </Card>
         )}
 
-        {!!requests?.length && (
-          <Card className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-canvas">
-                <tr>
-                  <th className={thClass}>Ref</th>
-                  <th className={thClass}>Location</th>
-                  <th className={thClass}>Issue</th>
-                  <th className={thClass}>Priority</th>
-                  <th className={thClass}>Status</th>
-                  <th className={thClass}>Submitted</th>
-                  <th className={thClass}>Resolved by</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pager.pageItems.map((r) => (
-                  <tr key={r.id} className="border-t border-hairline">
-                    <td className="px-4 py-2.5 font-mono text-ink-muted">
-                      REQ-{String(r.id).padStart(4, "0")}
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-ink">
-                      {r.labName} &middot; {r.seatNumber}
-                    </td>
-                    <td
-                      className="max-w-xs truncate px-4 py-2.5 text-ink"
-                      title={r.issueDescription}
-                    >
-                      {r.issueDescription}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <PriorityBadge priority={r.priority} />
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <StatusBadge status={r.status} />
-                    </td>
-                    <td className="px-4 py-2.5 text-ink-muted">
-                      {new Date(r.timeSubmitted).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2.5 text-ink-muted">{r.resolvedByName ?? "—"}</td>
+        {!!matching?.length && (
+          <Card className="overflow-hidden">
+            <div className={scrollListClass}>
+              <table className="w-full text-left text-sm">
+                <thead className={stickyHeadClass}>
+                  <tr>
+                    <th className={thClass}>Ref</th>
+                    <th className={thClass}>Location</th>
+                    <th className={thClass}>Issue</th>
+                    <th className={thClass}>Priority</th>
+                    <th className={thClass}>Status</th>
+                    <th className={thClass}>Submitted</th>
+                    <th className={thClass}>Resolved by</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pager.pageItems.map((r) => (
+                    <tr key={r.id} className="border-t border-hairline align-top">
+                      <td className="px-4 py-2.5 font-mono text-ink-muted">{formatRef(r.id)}</td>
+                      <td className="whitespace-nowrap px-4 py-2.5 font-mono text-ink">
+                        {r.labName} &middot; {r.seatNumber}
+                      </td>
+                      <IssueCell text={r.issueDescription} />
+                      <td className="px-4 py-2.5">
+                        <PriorityBadge priority={r.priority} />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <StatusBadge status={r.status} />
+                      </td>
+                      <td className="px-4 py-2.5 text-ink-muted">
+                        {new Date(r.timeSubmitted).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2.5 text-ink-muted">{r.resolvedByName ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <Pagination {...pager} onPageChange={pager.setPage} />
           </Card>
         )}

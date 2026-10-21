@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { loggedOut } from "@/store/authSlice";
 import { baseApi } from "@/lib/api/baseApi";
+import { useGetQueueQuery } from "@/lib/api/requestsApi";
 
 const LINKS = [
   { href: "/staff/dashboard", label: "Queue" },
@@ -18,6 +19,10 @@ export function StaffNav() {
   const staff = useAppSelector((state) => state.auth.staff);
   const dispatch = useAppDispatch();
   const router = useRouter();
+  // Shares the cache entry NewRequestWatcher already polls, so the count stays
+  // live on every staff page without an extra request.
+  const { data: queue } = useGetQueueQuery();
+  const pendingCount = queue?.length ?? 0;
 
   function handleLogout() {
     dispatch(loggedOut());
@@ -42,6 +47,11 @@ export function StaffNav() {
               }`}
             >
               {link.label}
+              {link.href === "/staff/dashboard" && !!pendingCount && (
+                <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  {pendingCount}
+                </span>
+              )}
             </Link>
           );
         })}

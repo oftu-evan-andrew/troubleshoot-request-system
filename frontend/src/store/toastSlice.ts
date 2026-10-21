@@ -1,8 +1,11 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+export type ToastTone = "info" | "success" | "error";
+
 export interface ToastItem {
   id: number;
   message: string;
+  tone: ToastTone;
 }
 
 interface ToastState {
@@ -18,8 +21,11 @@ const toastSlice = createSlice({
   name: "toast",
   initialState,
   reducers: {
-    toastShown: (state, action: PayloadAction<string>) => {
-      state.items.push({ id: state.nextId, message: action.payload });
+    // A bare string is an info toast, so existing call sites stay unchanged.
+    toastShown: (state, action: PayloadAction<string | { message: string; tone?: ToastTone }>) => {
+      const { message, tone = "info" } =
+        typeof action.payload === "string" ? { message: action.payload } : action.payload;
+      state.items.push({ id: state.nextId, message, tone });
       state.nextId += 1;
       state.items = state.items.slice(-MAX_VISIBLE_TOASTS);
     },

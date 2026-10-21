@@ -4,13 +4,24 @@ import { use } from "react";
 import Link from "next/link";
 import { useGetRequestByIdQuery } from "@/lib/api/requestsApi";
 import { StatusBadge } from "@/components/StatusBadge";
+import { PriorityBadge } from "@/components/PriorityBadge";
 import { Card } from "@/components/ui/Card";
+import { formatRef } from "@/lib/format";
+
+// Reporters often keep this page open while they wait, so it refreshes itself
+// until the request reaches a final state.
+const POLL_INTERVAL_MS = 10000;
 
 export default function StatusPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const requestId = Number(id);
   const { data: request, isLoading, isError } = useGetRequestByIdQuery(requestId, {
     skip: Number.isNaN(requestId),
+  });
+  const isOpen = request?.status === "Pending" || request?.status === "InProgress";
+  useGetRequestByIdQuery(requestId, {
+    skip: Number.isNaN(requestId) || !isOpen,
+    pollingInterval: POLL_INTERVAL_MS,
   });
 
   return (
@@ -20,8 +31,11 @@ export default function StatusPage({ params }: { params: Promise<{ id: string }>
       </Link>
 
       <h1 className="mb-1 text-2xl font-semibold text-ink">
-        Request <span className="font-mono">REQ-{String(requestId).padStart(4, "0")}</span>
+        Request <span className="font-mono">{formatRef(requestId)}</span>
       </h1>
+      {isOpen && (
+        <p className="text-xs text-ink-faint">This page updates automatically.</p>
+      )}
 
       {isLoading && <p className="mt-4 text-sm text-ink-muted">Loading...</p>}
       {isError && (
@@ -42,11 +56,11 @@ export default function StatusPage({ params }: { params: Promise<{ id: string }>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-ink-muted">Priority</span>
-            <span className="text-ink">{request.priority}</span>
+            <PriorityBadge priority={request.priority} />
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-ink-muted">Issue</span>
-            <p className="text-ink">{request.issueDescription}</p>
+            <p className="whitespace-pre-wrap text-ink">{request.issueDescription}</p>
           </div>
           <div className="flex items-center justify-between border-t border-hairline pt-3">
             <span className="text-ink-muted">Submitted</span>

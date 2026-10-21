@@ -6,34 +6,11 @@ import { StaffNav } from "@/components/StaffNav";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
-import { fieldClass, labelClass } from "@/lib/ui";
+import { PasswordField } from "@/components/ui/PasswordField";
+import { extractErrorMessage } from "@/lib/errors";
+import { fieldClass, labelClass, scrollListClass, stickyHeadClass } from "@/lib/ui";
 import { usePagination } from "@/lib/usePagination";
 import { useListStaffQuery, useRegisterStaffMutation } from "@/lib/api/authApi";
-
-function extractErrorMessage(error: unknown): string {
-  if (error && typeof error === "object" && "data" in error) {
-    const data = (error as { data?: unknown }).data;
-
-    // Registration failures (weak password, duplicate email) come back as a
-    // list of { code, description } entries from ASP.NET Identity.
-    if (Array.isArray(data)) {
-      const descriptions = data
-        .map((entry) =>
-          entry && typeof entry === "object" && "description" in entry
-            ? (entry as { description?: unknown }).description
-            : null,
-        )
-        .filter((d): d is string => typeof d === "string");
-      if (descriptions.length) return descriptions.join(" ");
-    }
-
-    if (data && typeof data === "object" && "message" in data) {
-      const message = (data as { message?: unknown }).message;
-      if (typeof message === "string") return message;
-    }
-  }
-  return "Something went wrong. Please try again.";
-}
 
 export default function StaffSettingsPage() {
   return (
@@ -82,27 +59,29 @@ function SettingsContent() {
           </Card>
         )}
         {!!staff?.length && (
-          <Card className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-canvas">
-                <tr>
-                  <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                    Name
-                  </th>
-                  <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                    Email
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {pager.pageItems.map((s) => (
-                  <tr key={s.id} className="border-t border-hairline">
-                    <td className="px-4 py-2.5 text-ink">{s.name}</td>
-                    <td className="px-4 py-2.5 text-ink-muted">{s.email}</td>
+          <Card className="overflow-hidden">
+            <div className={scrollListClass}>
+              <table className="w-full text-left text-sm">
+                <thead className={stickyHeadClass}>
+                  <tr>
+                    <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                      Name
+                    </th>
+                    <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                      Email
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pager.pageItems.map((s) => (
+                    <tr key={s.id} className="border-t border-hairline">
+                      <td className="px-4 py-2.5 text-ink">{s.name}</td>
+                      <td className="px-4 py-2.5 text-ink-muted">{s.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <Pagination {...pager} onPageChange={pager.setPage} />
           </Card>
         )}
@@ -118,6 +97,7 @@ function SettingsContent() {
             Name
             <input
               required
+              autoComplete="off"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={fieldClass}
@@ -129,26 +109,20 @@ function SettingsContent() {
             <input
               required
               type="email"
+              autoComplete="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={fieldClass}
             />
           </label>
 
-          <label className={labelClass}>
-            Password
-            <input
-              required
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={fieldClass}
-            />
-            <span className="text-xs font-normal text-ink-muted">
-              At least 6 characters, with an uppercase letter, a lowercase letter, a number, and
-              a symbol.
-            </span>
-          </label>
+          <PasswordField
+            label="Password"
+            autoComplete="new-password"
+            value={password}
+            onChange={setPassword}
+            hint="At least 6 characters, with an uppercase letter, a lowercase letter, a number, and a symbol."
+          />
 
           {error && <p className="text-sm text-red-ink">{error}</p>}
           {success && <p className="text-sm text-green-ink">{success}</p>}

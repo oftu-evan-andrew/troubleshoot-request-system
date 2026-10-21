@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { credentialsReceived } from "@/store/authSlice";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { PasswordField } from "@/components/ui/PasswordField";
 import { fieldClass, labelClass } from "@/lib/ui";
 
 export default function StaffLoginPage() {
@@ -61,23 +62,21 @@ export default function StaffLoginPage() {
             Email
             <input
               required
+              autoFocus
               type="email"
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={fieldClass}
             />
           </label>
 
-          <label className={labelClass}>
-            Password
-            <input
-              required
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={fieldClass}
-            />
-          </label>
+          <PasswordField
+            label="Password"
+            autoComplete="current-password"
+            value={password}
+            onChange={setPassword}
+          />
 
           {error && <p className="text-sm text-red-ink">{error}</p>}
 
